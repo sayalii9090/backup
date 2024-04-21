@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache-frontend-deployment
+  namespace: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tj-frontend
+  template:
+    metadata:
+      labels:
+        app: tj-frontend
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - frontend
+      containers:
+      - name: tj-frontend
+        image: tejasacharekar1/eks-project:v1
+        ports:
+        - containerPort: 80

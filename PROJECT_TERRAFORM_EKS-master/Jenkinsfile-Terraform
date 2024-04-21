@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+    environment
+	{
+	awscredential = credentials("kubernetes")
+	}
+    parameters {
+        choice(
+            choices: ['ap-south-1', 'ap-southeast-1', 'us-east-1'],
+            description: 'Select the region for your infrastructure.',
+            name: 'REGION'
+        )
+        choice(
+            choices: ['ON_DEMAND', 'SPOT'],
+            description: 'Capacity Reservation for EC2 instance',
+            name: 'Capacity_Reservation'
+        )
+        booleanParam(name: 'ClusterPlan', description: 'Planning EKS Cluster')
+        booleanParam(name: 'ClusterCreate', description: 'Creating EKS Cluster')
+        booleanParam(name: 'ClusterDestroy', description: 'Destroy Cluster')
+    }
+    stages {
+        stage('Planning EKS Cluster') {
+            when
+		    {
+		        expression{"${params.ClusterPlan}"=="true"}
+		    }
+            steps {
+                bat('terraform init -no-color')
+                bat('terraform plan -var region=%REGION% -var capacity=%Capacity_Reservation% -no-color')
+            }
+        }
+        stage('Creating EKS Cluster') {
+            when
+		    {
+		        expression{"${params.ClusterCreate}"=="true"}
+		    }
+            steps {
+                bat('terraform apply -var region=%REGION% -var capacity=%Capacity_Reservation% --auto-approve -no-color')
+            }
+        }
+        stage('Destroy Cluster') {
+            when
+            {
+                expression{"${params.ClusterDestroy}"=="true"}
+            }
+            steps {
+                bat 'terraform destroy -var region=%REGION%  -var capacity=%Capacity_Reservation% --auto-approve -no-color'
+            }
+        }
+    }   
+}

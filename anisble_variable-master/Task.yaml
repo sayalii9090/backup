@@ -1,0 +1,8 @@
+-
+  name: this is our first playbook
+  hosts: webservers
+  become: true
+  vars_files:
+      - group_vars
+  tasks:
+    - import_tasks: main_playbook.yml

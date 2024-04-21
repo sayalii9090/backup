@@ -1,0 +1,27 @@
+---
+- name: Running playbooks
+  hosts: webservers
+  become: true
+  vars_files:
+      - group_vars
+  tasks:
+  - name: Install packages
+    yum:
+      name: "{{ packages }}"
+      state: latest
+
+  - name: start and enable httpd service
+    service:
+      name: "{{ httpd_service }}"
+      state: started
+      enabled: true
+
+  - name: copy conf file
+    copy:
+      src: index.html
+      dest: /var/www/html/
+
+  - name: "server restart"
+    service:
+      name: "{{ httpd_service }}"
+      state: restarted

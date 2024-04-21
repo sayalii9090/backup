@@ -1,0 +1,21 @@
+-
+ name: Installing webserver
+ hosts: webserver
+ become: true
+ tasks:
+   - name: "Installing HTTPD"
+     yum:
+       name: httpd
+       state: present
+   - name: "Starting webserver"
+     service:
+       name: httpd
+       state: started
+       enabled: True
+   - name: "Deploy static website"
+     copy:
+       src: index.html
+       dest: /var/www/html/
+   - name: "Changing the hostname"
+     hostname:
+       name: epiqinfo.example.com

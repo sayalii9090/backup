@@ -1,0 +1,141 @@
+pipeline {
+    agent any
+    environment
+	{
+	awscredential = credentials("kubernetes")
+	}
+    parameters {
+        choice(
+            choices: ['ap-south-1', 'ap-south-2', 'ap-southeast-1', 'us-east-1'],
+            description: 'Select the region for your infrastructure.',
+            name: 'REGION'
+        )
+        booleanParam(name: 'kubeconfig', description: 'Setting kubeconfig')
+        booleanParam(name: 'NodeInfo', description: 'Node Details')
+        booleanParam(name: 'CheckIngressController', description: 'Check Ingress Controller')
+        // booleanParam(name: 'NodeLabel', description: 'Apply labels to node')
+        booleanParam(name: 'NSCreate', description: 'Creating Name Spaces')
+        booleanParam(name: 'Deploy', description: 'Creating Deployments')
+        booleanParam(name: 'Services', description: 'Creating Services')
+        booleanParam(name: 'IngressCreate', description: 'Creating Ingress')
+        booleanParam(name: 'IngressCheck', description: 'Checking Ingress')
+        booleanParam(name: 'DeploymentDestroy', description: 'Destroy EKS Resources')
+    }
+    stages {
+        stage('Setting kubeconfig'){
+            when
+            {
+                expression{"${params.kubeconfig}"=="true"}
+            }
+            steps {
+                bat 'aws eks update-kubeconfig --region %REGION% --name tj-eks-project-cluster'
+            }
+        }
+        stage('Checking cluster'){
+             when
+            {
+                expression{"${params.kubeconfig}"=="true"}
+            }
+            steps{
+                bat 'kubectl cluster-info'
+            }
+        }
+        stage('Node Details') {
+            when
+		    {
+		        expression{"${params.NodeInfo}"=="true"}
+		    }
+            steps {
+                bat 'kubectl get nodes'
+            }
+        }
+        stage('Check Ingress Controller') {
+            when
+            {
+                expression{"${params.CheckIngressController}"=="true"}
+            }
+            steps {
+                bat 'kubectl get svc nginx-ingress-controller -n kube-system -o wide'
+            }
+        }
+        // stage('Apply labels to Node') {
+        //     when
+		//     {
+		//         expression{"${NodeLabel}"=="true"}
+		//     }
+        //     steps {
+        //         script {
+        //          firstNode = input (
+        //             message: 'Enter name of frontend node', 
+        //             ok: 'Submit', 
+        //             parameters: [string(defaultValue: 'Enter', name: 'FIRST_NODE', trim: true)]
+        //           )
+        //           echo "Good, $firstNode"
+        //           bat 'kubectl label node ${firstNode} app=frontend'
+        //           secondNode = input (
+        //             message: 'Enter name of backend node', 
+        //             ok: 'Submit', 
+        //             parameters: [string(defaultValue: 'Enter', name: 'SECOND_NODE', trim: true)]
+        //           )
+        //           bat 'kubectl label node ${secondNode} app=backend'
+        //         }
+        //     }
+        // }
+        stage('Creating Name Space') {
+            when
+		    {
+		        expression{"${params.NSCreate}"=="true"}
+		    }
+            steps {
+                bat 'kubectl apply -f NS_Backend.yaml'
+                bat 'kubectl apply -f NS_Frontend.yaml'
+            }
+        }
+        stage('Creating Deployments') {
+            when
+            {
+                expression{"${params.Deploy}"=="true"}
+            }
+            steps {
+                bat 'kubectl apply -f Backend_deploy.yaml,Frontend_deploy.yaml'
+            }
+        }
+        stage('Creating Services') {
+            when
+            {
+                expression{"${params.Services}"=="true"}
+            }
+            steps {
+                bat 'kubectl apply -f Frontend_SVC.yaml,Backend_SVC.yaml'
+            }
+        }
+        stage('Creating Ingress') {
+            when
+            {
+                expression{"${params.IngressCreate}"=="true"}
+            }
+            steps {
+                bat 'kubectl apply -f Ingress_BE.yaml,Ingress_FE.yaml'
+            }
+        }
+        stage('Checking Ingress') {
+            when
+            {
+                expression{"${params.IngressCheck}"=="true"}
+            }
+            steps {
+                bat 'kubectl get ing -n frontend'
+                bat 'kubectl get ing -n backend'
+            }
+        }
+        stage('Destroy Deployements') {
+            when
+            {
+                expression{"${params.DeploymentDestroy}"=="true"}
+            }
+            steps {
+                bat 'kubectl delete -f .'
+            }
+        }
+    }   
+}

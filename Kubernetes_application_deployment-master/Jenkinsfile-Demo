@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+    environment {
+        awscredential = credentials("account")
+    }
+    parameters {
+        choice choices: ['ON_DEMAND', 'SPOT'], description: 'Kindly Select the Instance Type', name: 'instanceType'
+        booleanParam(name: 'ClusterPlan', description: 'Planning EKS Cluster')
+        booleanParam(name: 'ClusterCreate', description: 'Creating EKS Cluster')
+        booleanParam(name: 'ClusterDestroy', description: 'Destroy Cluster')
+    }
+    options {
+    buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
+    }
+    stages {
+        stage('Initiating Terraform configuration') {
+            steps {
+                sh("sed -i 's/instance_type/$instanceType/' value.tfvars")
+                sh('terraform init -no-color')
+            }
+        }
+        stage('Planning EKS Cluster') {
+            when {
+                expression { "${params.ClusterPlan}" == "true" }
+            }
+            steps {
+                sh('terraform plan --var-file value.tfvars -no-color')
+            }
+        }
+        stage('Creating EKS Cluster') {
+            when {
+                expression { "${params.ClusterCreate}" == "true" }
+            }
+            steps {
+                sh('terraform apply --var-file value.tfvars --auto-approve -no-color')
+            }
+        }
+        stage('Destroy Cluster') {
+            when {
+                expression { "${params.ClusterDestroy}" == "true" }
+            }
+            steps {
+                sh('terraform destroy --var-file value.tfvars --auto-approve -no-color')
+            }
+        }
+    }
+}

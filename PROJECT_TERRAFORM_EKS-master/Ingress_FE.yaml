@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  name: eks-frontendns-ingress
+  namespace: frontend
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ac7465a2b32154a71b7ca207d4d41767-544860922.ap-south-1.elb.amazonaws.com
+    http:
+      paths:
+      - path: /frontend
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80

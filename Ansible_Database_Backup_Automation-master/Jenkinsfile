@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+    environment
+	{
+	awscredential = credentials("sayalim-creds")
+	}
+    parameters {
+        string description: 'Bucket region', name: 'bucket_region', trim: true
+        string description: 'SQL Express user name', name: 'sql_username', trim: true
+        password defaultValue: '', description: 'SQL Express Password', name: 'sql_password'
+        string description: 'S3 Bucket Name', name: 's3_bucket_name', trim: true
+        string description: '''Kindly input database name as below:
+TestDB,TestDb2,TestDb3''', name: 'db_name', trim: true
+        choice choices: ['Production', 'Development', 'Test'], description: 'Kindly Select the cloud environment', name: 'Environment'
+        string description: 'Enter host IP', name: 'host_ip', trim: true
+        booleanParam(name: 'variableUpdatePS', description: 'Updating Variables for Backup Script')
+        booleanParam(name: 'hostIPUpdate', description: 'Update host IP in inventory file')
+        booleanParam(name: 'runPlaybook', description: 'Run Ansible Playbook')
+    }
+    options {
+   	buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
+    }
+    stages {
+        stage('Updating in PS variable file') {
+            when
+		    {
+		        expression{"${params.variableUpdatePS}"=="true"}
+		    }
+            steps {
+                   sh  'echo $Environment'
+           sh  "sed -i -e 's/ap-south-1/$bucket_region/' -e 's/sa/$sql_username/' -e 's/pass!90/$sql_password/' -e 's/ansible-project-db-backup/$s3_bucket_name/' -e 's/DB_name/$db_name/' -e 's/Production/$params.Environment/' backup-script/fullBackupvariable.ps1"
+            sh  "sed -i -e 's/ap-south-1/$bucket_region/' -e 's/sa/$sql_username/' -e 's/pass!90/$sql_password/' -e 's/ansible-project-db-backup/$s3_bucket_name/' -e 's/DB_name/$db_name/' -e 's/Production/$params.Environment/' backup-script/differentialBackupvariable.ps1"
+            }
+        }
+        stage('Updating in host file') {
+            when
+		    {
+		        expression{"${params.hostIPUpdate}"=="true"}
+		    }
+            steps {
+		sh 'echo $host_ip'
+                sh "sed -i 's/3.110.46.35/$host_ip/' host.inv"
+            }
+        }
+        stage('Running Playbook') {
+            when
+            {
+                expression{"${params.runPlaybook}"=="true"}
+            }
+            steps {
+                sh  'ansible-playbook script.yaml -i host.inv'
+            }
+        }
+    }
+}   

@@ -1,0 +1,41 @@
+{
+    "Version": "2008-10-17",
+    "Statement": [
+        {
+            "Sid": "DenyAllAccess",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:DeleteObject",
+            "Resource": "arn:aws:s3:::tj-test-23/*"
+        },
+        {
+            "Sid": "DenyAllAccessForPolicyAndLifecycleConfiguration",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": [
+                "s3:DeleteBucketPolicy",
+                "s3:GetLifecycleConfiguration",
+                "s3:PutLifecycleConfiguration",
+                "s3:PutBucketPolicy"
+            ],
+            "Resource": "arn:aws:s3:::tj-test-23",
+            "Condition": {
+                "ArnNotEquals": {
+                    "aws:PrincipalArn": "arn:aws:iam::714394906614:user/Sayali"
+                }
+            }
+        },
+        {
+            "Sid": "DenyPut",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::tj-test-23/*",
+            "Condition": {
+                "ArnNotEquals": {
+                    "aws:PrincipalArn": "arn:aws:iam::714394906614:user/Sayali"
+                }
+            }
+        }
+    ]
+}

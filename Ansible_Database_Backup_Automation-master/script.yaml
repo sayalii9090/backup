@@ -1,0 +1,29 @@
+---
+- name: Database Backup
+  hosts: windows
+  become: false
+  tasks:
+  - name: "Creating Script directory"
+    win_file:
+      path: C:\Database\scripts\
+      state: directory
+  - name: "Creating Logs directory"
+    win_file:
+      path: C:\Database\Logs\
+      state: directory
+  - name: "Creating Backup directory"
+    win_file:
+      path: C:\Database\Backup\
+      state: directory
+  - name: Copy conf file
+    ansible.windows.win_copy:
+      src: "./backup-script/"
+      dest: C:\Database\scripts\
+      remote_src: false
+  - name: Scheduling daily full backup task in Scheduler
+    script: fullBackupScript.ps1
+    retries: 4
+  - name: Scheduling hourly differential backup task in Scheduler
+    script: diffBackupScript.ps1
+    retries: 4
+

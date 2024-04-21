@@ -1,0 +1,8 @@
+---
+- hosts: windows
+  become: false
+  tasks:
+  - name: Ping Windows Hosts
+    win_ping:
+      data: pong
+

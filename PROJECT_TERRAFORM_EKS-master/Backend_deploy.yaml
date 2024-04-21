@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-backend-deployment
+  namespace: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tj-backend
+  template:
+    metadata:
+      labels:
+        app: tj-backend
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - backend
+      containers:
+      - name: tj-backend
+        image: tejasacharekar1/eks-project:v2
+        ports:
+        - containerPort: 80
